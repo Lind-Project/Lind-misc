@@ -78,17 +78,26 @@ function install_to_path {
 
     echo "Injecting Libs into RePy install"
     cd ~/lind/
-    nacl_base=/home/lind/lind/native_client
+    nacl_base=/home/lind/lind/nativeclient/native_client
 
-    print "Sendning NaCl stuff to $REPY_PATH"
+    print "**Sending NaCl stuff to $REPY_PATH"
     base="${REPY_PATH}/lib"
     echo "Base is $base"
+
+    echo "Deleting all directories in the $REPY_PATH (except repy folder)"
+    rm -rf ${REPY_PATH}/lib
+    rm -rf ${REPY_PATH}/bin
+    rm -rf ${REPY_PATH}/sdk
+
     mkdir -p $base
     bin=$REPY_PATH/bin
     mkdir -p $bin
+    mkdir -p $REPY_PATH/sdk
     mkdir -p $base/glibc
     mkdir -p $base/libs
     mkdir -p $base/include
+
+    $cp ${nacl_base}/tools/out/nacl-sdk/ ${REPY_PATH}/sdk/linux_x86/
 
     $cp ${nacl_base}/scons-out/${mode}-x86-64/staging/ $bin/
 
@@ -96,12 +105,10 @@ function install_to_path {
     cp -f lind.sh $bin/lind
     chmod +x $bin/lind
 
-    $cp $nacl_base/out/install/glibc_64/nacl64/lib/ $base/glibc/
-    $cp $nacl_base/out/install/glibc_64/nacl64/include/ $base/include
-    $cp $nacl_base/out/install/full-gcc-glibc/nacl64/lib64/  $base/libs/
-    $cp $nacl_base/out/install/glibc_64/nacl64/lib/  $base/libs/
-    $cp $nacl_base/out/install/nacl_libs_glibc_64/nacl64/lib/  $base/libs/
-
+    $cp ${nacl_base}/tools/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH}/lib/glibc/
+    $cp ${nacl_base}/tools/out/nacl-sdk/x86_64-nacl/include/*  ${REPY_PATH}/lib/include/
+    $cp ${nacl_base}/tools/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH}/lib/libs
+    $cp ${nacl_base}/scons-out/nacl-x86-64-glibc/lib/* ${REPY_PATH}/lib/libs/
 }
 
 
