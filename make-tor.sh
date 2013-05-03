@@ -2,6 +2,7 @@
 
 export NACL_ARCH=x86_64
 export NACL_GLIBC=1
+export NACLPORTS_PREFIX=${REPY_PATH}/usr
 
 source ../naclports/build_tools/common.sh
 
@@ -27,6 +28,15 @@ make
 make install
 make clean
 
+Banner "Configure openssl"
+ChangeDir "../openssl-1.0.1e"
+MACHINE=i686 ./config \
+     --prefix=${NACLPORTS_PREFIX} no-asm no-hw no-krb5 shared -D_GNU_SOURCE
+make clean
+make build_libs
+make install
+make clean
+
 Banner "Configure libevent"
 ChangeDir "../libevent-2.0.21-stable"
 Remove "build-nacl"
@@ -37,15 +47,6 @@ make
 make install
 make clean
 ChangeDir ".."
-
-Banner "Configure openssl"
-ChangeDir "../openssl-1.0.1e"
-MACHINE=i686 ./config \
-     --prefix=${NACLPORTS_PREFIX} no-asm no-hw no-krb5 shared -D_GNU_SOURCE
-make clean
-make build_libs
-make install
-make clean
 
 Banner "Build tor"
 ChangeDir "../tor-0.2.3.25"
