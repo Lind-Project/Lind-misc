@@ -50,8 +50,7 @@ function download_src {
   cd ${LIND_BASE} && rm -rf lind_glibc misc nacl_repy nacl
   git clone ${LIND_GLIBC_URL} lind_glibc
   cd lind_glibc
-  git checkout -f origin/replaceIRT
-  git branch replaceIRT
+  git checkout -b replaceIRT origin/replaceIRT
   cd ..
   git clone ${LIND_MISC_URL} misc
   git clone ${NACL_REPY_URL} nacl_repy
