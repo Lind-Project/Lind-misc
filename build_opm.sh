@@ -43,22 +43,39 @@ readonly REPY_PATH_SDK=${REPY_PATH}/sdk
 readonly LIND_GLIBC_URL='https://github.com/Lind-Project/Lind-GlibC.git'
 readonly LIND_MISC_URL='https://github.com/Lind-Project/Lind-misc.git'
 readonly NACL_REPY_URL='https://github.com/Lind-Project/nacl_repy.git'
+readonly NACL_RUNTIME_URL='https://github.com/Lind-Project/native_client.git'
 readonly NACL_REVISION=10567 #2013-01-10 08:37:44 -0500
 
 function download_src {
   mkdir -p ${LIND_SRC}
   cd ${LIND_SRC} && rm -rf lind_glibc misc nacl_repy nacl
+  
   git clone ${LIND_GLIBC_URL} lind_glibc
   cd lind_glibc
-  git checkout -b replaceIRT origin/replaceIRT
+  git checkout -b one_proc_model origin/one_proc_model
   cd ..
+  
   git clone ${LIND_MISC_URL} misc
+  
   git clone ${NACL_REPY_URL} nacl_repy
+  cd nacl_repy
+  git checkout -b one_proc_model origin/one_proc_model
+  cd ..
   
   mkdir -p ${NACL_SRC}
   cd ${NACL_SRC}
-  gclient config http://src.chromium.org/native_client/trunk/src/native_client
-  gclient sync --revision ${NACL_REVISION}
+  echo 'solutions = [
+  { "name"        : "native_client",
+    "url"         : "https://github.com/Lind-Project/native_client.git@lind",
+    "deps_file"   : "DEPS",
+    "managed"     : True,
+    "custom_deps" : {
+    },
+    "safesync_url": "",
+  },
+]
+cache_dir = None' > .gclient
+  gclient sync
   
   cd ${NACL_TOOLCHAIN_BASE} && rm -fr SRC
   make sync
@@ -85,20 +102,6 @@ function clean_toolchain {
 }
 
 
-# install many of the packages this project needs.
-# Uses apt-get to setup the system.
-#
-function install_deps {
-    set -o errexit
-    sudo apt-get install build-essential git-core subversion python2.6 python-dev python2.6-dev texinfo texlive gcc-multilib g++-multilib libsdl1.2-dev texinfo libcrypto++-dev libssl-dev lib32ncurses5-dev m4
-
-    cd ${LIND_SRC}
-    svn checkout http://src.chromium.org/svn/trunk/tools/depot_tools
-    echo "\nexport PATH=$PATH:${LIND_SRC}/depot_tools" >> ~/.bashrc
-
-}
-
-
 # Compile liblind and the compoent programs.
 # 
 # 
@@ -108,6 +111,7 @@ function build_liblind {
     echo "done."
 
 }
+
 
 # Copy the toolchain files into the repy subdir.
 #
@@ -137,8 +141,8 @@ function install_to_path {
     cp -f ${MISC_DIR}/lind.sh ${REPY_PATH_BIN}/lind
     chmod +x ${REPY_PATH_BIN}/lind
 
-    cp ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH_LIB}/glibc
-    cp ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH_LIB}/libs
+    cp -pvr ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH_LIB}/glibc
+    cp -pvr ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH_LIB}/libs
 }
 
 
@@ -350,20 +354,8 @@ function glibc_tester {
     lind ${MISC_DIR}/glibc_test/glibc_tester.nexe
 }
 
-
-# Run the RPC generator
-#
-#
-function build_rpc {
-    set -o errexit
-    cd ${MISC_DIR}/rpcgen
-    python syscall_gen.py | indent
-    type -P indent &>/dev/null && indent lind_rpc_gen.c -o lind_rpc_gen.c || echo "Indent Not Found. Skipping reformatting rpc code." 
-    mv -vf lind_rpc_gen.* ${LIND_GLIBC_SRC}/sysdeps/nacl/
-}
-
 PS3="build what: " 
-list="all repy nacl glibc cleantoolchain cleannacl install install_deps liblind test_repy test_glibc test_apps sdk rpc test nightly"
+list="all repy nacl glibc cleantoolchain cleannacl install liblind test_repy test_glibc test_apps sdk rpc test nightly"
 word=""
 if  test -z "$1" 
 then
@@ -396,7 +388,6 @@ do
             download_src
     elif [ "$word" = "all" ]; then
             download_src
-            build_rpc
 	    build_nacl
 	    build_glibc
 	    build_repy
@@ -427,15 +418,9 @@ do
 	    test_repy
 	    glibc_tester
 	    test_apps
-    elif [ "$word" = "rpc" ]; then
-	    print "Building new RPC stubs"
-	    build_rpc
     elif [ "$word" = "nightly" ]; then
 	    print "Nightly Build"
 	    nightly_build
-    elif [ "$word" = "install_deps" ]; then
-	    print "Installing Dependicies"
-	    install_deps
     else 
 	    echo "Error: Did not find a build target named $word. Exiting..."
 	    exit 1
