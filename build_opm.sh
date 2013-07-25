@@ -25,7 +25,7 @@ if [ -z "$LIND_SRC" ]; then
    exit 1
 fi
 
-readonly MODE='dbg-linux'
+readonly MODE='dbg-host'
 readonly LIND_SRC=${LIND_SRC}
 readonly MISC_DIR=${LIND_SRC}/misc
 readonly NACL_SRC=${LIND_SRC}/nacl
@@ -216,8 +216,7 @@ function build_repy {
 
     print "Building Repy in $repy_src to $REPY_PATH" 
     cd ${NACL_REPY}
-    python preparetest.py -t ${REPY_PATH_REPY}
-    cp ${REPY_PATH_REPY}/serialize.repy ${REPY_PATH_REPY}/serialize.py
+    python preparetest.py -t -f ${REPY_PATH_REPY}
     print "Done building Repy in ${REPY_PATH_REPY}"
     cd seattlelib
     set -o errexit
