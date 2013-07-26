@@ -25,7 +25,15 @@ if [ -z "$LIND_SRC" ]; then
    exit 1
 fi
 
-readonly MODE='dbg-host'
+readonly OS_NAME=$(uname -s)
+if [ $OS_NAME = "Darwin" ]; then
+  readonly OS_SUBDIR="mac"
+elif [ $OS_NAME = "Linux" ]; then
+  readonly OS_SUBDIR="linux"
+else
+  readonly OS_SUBDIR="win"
+fi
+readonly MODE='dbg-'${OS_SUBDIR}
 readonly LIND_SRC=${LIND_SRC}
 readonly MISC_DIR=${LIND_SRC}/misc
 readonly NACL_SRC=${LIND_SRC}/nacl
@@ -140,21 +148,9 @@ function install_to_path {
     #install script
     cp -f ${MISC_DIR}/lind.sh ${REPY_PATH_BIN}/lind
     chmod +x ${REPY_PATH_BIN}/lind
-
+    
     cp -pvr ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH_LIB}/glibc
     cp -pvr ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH_LIB}/libs
-}
-
-
-# Build then copy the SDK specific parts of the toolchain.
-#
-# 
-function build_sdk {
-    build_glibc_gcc
-    echo "Copying SDK"
-    mkdir -p ${REPY_PATH}
-    rm -rf ${REPY_PATH_SDK}
-    cp -pvr ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk ${REPY_PATH_SDK}
 }
 
 
@@ -222,7 +218,7 @@ function build_repy {
     set -o errexit
     for file in *.mix
     do
-	${MISC_DIR}/check_inlcudes.sh $file
+	${MISC_DIR}/check_includes.sh $file
     done
     set +o errexit
     etags  --language-force=python *.mix *.repy
@@ -274,17 +270,8 @@ function clean_install {
 function build_nacl {
      print "Building NaCl"
      cd ${NACL_BASE} || exit -1
-     # first build standard NaCl
-     ./scons --verbose --mode=${MODE},nacl platform=x86-64 -j4 -k
-     # and check
-     rc=$?
-     if [ "$rc" -ne "0" ]; then
-	     print "NaCl Build Failed($rc)"
-	     echo -e "\a"
-	     exit $rc
-     fi
 
-     # and now the glibc version
+     # build NaCl with glibc tests
      ./scons --verbose --mode=${MODE},nacl platform=x86-64 --nacl_glibc -j4 -k
      # and check
      rc=$?
@@ -339,7 +326,6 @@ function build_glibc {
      print "Done building toolchain"
 }
 
-
 # Run the glibc tester
 #
 #
@@ -354,7 +340,7 @@ function glibc_tester {
 }
 
 PS3="build what: " 
-list="all repy nacl glibc cleantoolchain cleannacl install liblind test_repy test_glibc test_apps sdk rpc test nightly"
+list="all repy nacl buildglibc cleantoolchain download cleannacl install liblind test_repy test_glibc test_apps sdk rpc test nightly"
 word=""
 if  test -z "$1" 
 then
@@ -379,10 +365,8 @@ do
 	    build_repy
     elif [ "$word" = "nacl" ]; then
 	    build_nacl
-    elif [ "$word" = "glibc" ]; then
+    elif [ "$word" = "buildglibc" ]; then
 	    build_glibc
-    elif [ "$word" = "sdk" ]; then
-	    build_sdk
     elif [ "$word" = "download" ]; then
             download_src
     elif [ "$word" = "all" ]; then
