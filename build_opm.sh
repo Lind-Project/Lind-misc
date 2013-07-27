@@ -54,6 +54,8 @@ readonly NACL_REPY_URL='https://github.com/Lind-Project/nacl_repy.git'
 readonly NACL_RUNTIME_URL='https://github.com/Lind-Project/native_client.git'
 readonly NACL_REVISION=10567 #2013-01-10 08:37:44 -0500
 
+readonly RSYNC='rsync -avrc'
+
 function download_src {
   mkdir -p ${LIND_SRC}
   cd ${LIND_SRC} && rm -rf lind_glibc misc nacl_repy nacl
@@ -132,25 +134,25 @@ function install_to_path {
 
     print "**Sending NaCl stuff to ${REPY_PATH}"
 
-    echo "Deleting all directories in the ${REPY_PATH} (except repy folder)"
-    rm -rf ${REPY_PATH_BIN}
-    rm -rf ${REPY_PATH_LIB}
-    rm -rf ${REPY_PATH_SDK}
+    #echo "Deleting all directories in the ${REPY_PATH} (except repy folder)"
+    #rm -rf ${REPY_PATH_BIN}
+    #rm -rf ${REPY_PATH_LIB}
+    #rm -rf ${REPY_PATH_SDK}
 
     mkdir -p ${REPY_PATH_BIN}
     mkdir -p ${REPY_PATH_LIB}/glibc
     mkdir -p ${REPY_PATH_LIB}/libs
 
-    cp -pvr ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk ${REPY_PATH_SDK}
+    ${RSYNC} ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/* ${REPY_PATH_SDK}
 
-    cp -pvr ${NACL_BASE}/scons-out/${MODE}-x86-64/staging/* ${REPY_PATH_BIN}
+    ${RSYNC} ${NACL_BASE}/scons-out/${MODE}-x86-64/staging/* ${REPY_PATH_BIN}
 
     #install script
     cp -f ${MISC_DIR}/lind.sh ${REPY_PATH_BIN}/lind
     chmod +x ${REPY_PATH_BIN}/lind
     
-    cp -pvr ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH_LIB}/glibc
-    cp -pvr ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH_LIB}/libs
+    ${RSYNC} ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH_LIB}/glibc
+    ${RSYNC} ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH_LIB}/libs
 }
 
 
@@ -260,7 +262,7 @@ function nightly_build {
 
 function clean_install {
     rm -rf $REPY_PATH
-    touch $REPY_PATH
+    mkdir -p $REPY_PATH
 }
 
 
@@ -272,7 +274,7 @@ function build_nacl {
      cd ${NACL_BASE} || exit -1
 
      # build NaCl with glibc tests
-     ./scons --verbose --mode=${MODE},nacl platform=x86-64 --nacl_glibc -j4 -k
+     ./scons --verbose --mode=${MODE},nacl platform=x86-64 --nacl_glibc -j4
      # and check
      rc=$?
      if [ "$rc" -ne "0" ]; then
@@ -326,6 +328,15 @@ function build_glibc {
      print "Done building toolchain"
 }
 
+function update_glibc {
+    cd ${NACL_TOOLCHAIN_BASE} && make updateglibc
+}
+
+function update_glibc2 {
+    cd ${NACL_TOOLCHAIN_BASE} && rm BUILD/stamp-glibc64
+    make BUILD/stamp-glibc64
+}
+
 # Run the glibc tester
 #
 #
@@ -340,7 +351,7 @@ function glibc_tester {
 }
 
 PS3="build what: " 
-list="all repy nacl buildglibc cleantoolchain download cleannacl install liblind test_repy test_glibc test_apps sdk rpc test nightly"
+list="all repy nacl buildglibc updateglibc updateglibc2 cleantoolchain download cleannacl install liblind test_repy test_glibc test_apps sdk rpc test nightly"
 word=""
 if  test -z "$1" 
 then
@@ -367,6 +378,10 @@ do
 	    build_nacl
     elif [ "$word" = "buildglibc" ]; then
 	    build_glibc
+    elif [ "$word" = "updateglibc" ]; then
+            update_glibc
+    elif [ "$word" = "updateglibc2" ]; then
+            update_glibc2
     elif [ "$word" = "download" ]; then
             download_src
     elif [ "$word" = "all" ]; then

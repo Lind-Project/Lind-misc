@@ -30,7 +30,7 @@ make clean
 
 Banner "Configure openssl"
 ChangeDir "../openssl-1.0.1e"
-MACHINE=i686 ./config \
+./config -d\
      --prefix=${NACLPORTS_PREFIX} no-asm no-hw no-krb5 shared -D_GNU_SOURCE
 make clean
 make build_libs
