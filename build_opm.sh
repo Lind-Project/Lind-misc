@@ -54,7 +54,7 @@ readonly NACL_REPY_URL='https://github.com/Lind-Project/nacl_repy.git'
 readonly NACL_RUNTIME_URL='https://github.com/Lind-Project/native_client.git'
 readonly NACL_REVISION=10567 #2013-01-10 08:37:44 -0500
 
-readonly RSYNC='rsync -avrc'
+readonly RSYNC='rsync -avrc --force'
 
 function download_src {
   mkdir -p ${LIND_SRC}
