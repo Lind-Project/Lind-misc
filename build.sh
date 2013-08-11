@@ -79,7 +79,7 @@ function download_src {
   
   mkdir -p ${NACL_SRC}
   cd ${NACL_SRC}
-  gclient config --name=native_client https://github.com/Lind-Project/native_client.git@lind
+  gclient config --name=native_client https://github.com/Lind-Project/native_client.git@lind --git-deps
   gclient sync
   cd ${NACL_TOOLCHAIN_BASE} && rm -fr SRC
   make sync
@@ -90,7 +90,7 @@ function download_src {
   
   mkdir -p ${NACL_PORTS_DIR}
   cd ${NACL_PORTS_DIR}
-  gclient config --name=src https://chromium.googlesource.com/external/naclports.git
+  gclient config --name=src https://chromium.googlesource.com/external/naclports.git --git-deps
   gclient sync
   
   cd ${LIND_SRC}
