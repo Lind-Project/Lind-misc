@@ -4,7 +4,7 @@ export NACL_ARCH=x86_64
 export NACL_GLIBC=1
 export NACLPORTS_PREFIX=${REPY_PATH}/usr
 
-source ../naclports/build_tools/common.sh
+source ../naclports/src/build_tools/common.sh
 
 export NACL_SEL_LDR
 export NACL_IRT
