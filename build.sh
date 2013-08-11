@@ -25,7 +25,15 @@ if [ -z "$LIND_SRC" ]; then
    exit 1
 fi
 
-readonly MODE='dbg-linux'
+readonly OS_NAME=$(uname -s)
+if [ $OS_NAME = "Darwin" ]; then
+  readonly OS_SUBDIR="mac"
+elif [ $OS_NAME = "Linux" ]; then
+  readonly OS_SUBDIR="linux"
+else
+  readonly OS_SUBDIR="win"
+fi
+readonly MODE='dbg-'${OS_SUBDIR}
 readonly LIND_SRC=${LIND_SRC}
 readonly MISC_DIR=${LIND_SRC}/misc
 readonly NACL_SRC=${LIND_SRC}/nacl
@@ -33,6 +41,7 @@ readonly NACL_BASE=${NACL_SRC}/native_client
 readonly NACL_TOOLCHAIN_BASE=${NACL_BASE}/tools
 readonly LIND_GLIBC_SRC=${LIND_SRC}/lind_glibc
 readonly NACL_REPY=${LIND_SRC}/nacl_repy
+readonly NACL_PORTS_DIR=${LIND_SRC}/naclports
 
 readonly REPY_PATH=${REPY_PATH}
 readonly REPY_PATH_BIN=${REPY_PATH}/bin
@@ -43,29 +52,48 @@ readonly REPY_PATH_SDK=${REPY_PATH}/sdk
 readonly LIND_GLIBC_URL='https://github.com/Lind-Project/Lind-GlibC.git'
 readonly LIND_MISC_URL='https://github.com/Lind-Project/Lind-misc.git'
 readonly NACL_REPY_URL='https://github.com/Lind-Project/nacl_repy.git'
-readonly NACL_REVISION=10567 #2013-01-10 08:37:44 -0500
+readonly NACL_RUNTIME_URL='https://github.com/Lind-Project/native_client.git'
+
+readonly RSYNC='rsync -avrc --force'
+
+if [ "$NACL_SDK_ROOT" != "${REPY_PATH_SDK}" ]; then
+  echo "You need to set \$NACL_SDK_ROOT to ${REPY_PATH_SDK}"
+  exit 1
+fi
 
 function download_src {
   mkdir -p ${LIND_SRC}
   cd ${LIND_SRC} && rm -rf lind_glibc misc nacl_repy nacl
+  
   git clone ${LIND_GLIBC_URL} lind_glibc
   cd lind_glibc
-  git checkout -b replaceIRT origin/replaceIRT
+  git checkout -b one_proc_model origin/one_proc_model
   cd ..
+  
   git clone ${LIND_MISC_URL} misc
+  
   git clone ${NACL_REPY_URL} nacl_repy
+  cd nacl_repy
+  git checkout -b one_proc_model origin/one_proc_model
+  cd ..
   
   mkdir -p ${NACL_SRC}
   cd ${NACL_SRC}
-  gclient config http://src.chromium.org/native_client/trunk/src/native_client
-  gclient sync --revision ${NACL_REVISION}
-  
+  gclient config --name=native_client https://github.com/Lind-Project/native_client.git@lind
+  gclient sync
   cd ${NACL_TOOLCHAIN_BASE} && rm -fr SRC
   make sync
   cd SRC
   mv glibc glibc_orig
   ln -s ${LIND_GLIBC_SRC} glibc
   cd ..
+  
+  mkdir -p ${NACL_PORTS_DIR}
+  cd ${NACL_PORTS_DIR}
+  gclient config --name=src https://chromium.googlesource.com/external/naclports.git
+  gclient sync
+  
+  cd ${LIND_SRC}
 }
 
 #
@@ -85,20 +113,6 @@ function clean_toolchain {
 }
 
 
-# install many of the packages this project needs.
-# Uses apt-get to setup the system.
-#
-function install_deps {
-    set -o errexit
-    sudo apt-get install build-essential git-core subversion python2.6 python-dev python2.6-dev texinfo texlive gcc-multilib g++-multilib libsdl1.2-dev texinfo libcrypto++-dev libssl-dev lib32ncurses5-dev m4
-
-    cd ${LIND_SRC}
-    svn checkout http://src.chromium.org/svn/trunk/tools/depot_tools
-    echo "\nexport PATH=$PATH:${LIND_SRC}/depot_tools" >> ~/.bashrc
-
-}
-
-
 # Compile liblind and the compoent programs.
 # 
 # 
@@ -108,6 +122,7 @@ function build_liblind {
     echo "done."
 
 }
+
 
 # Copy the toolchain files into the repy subdir.
 #
@@ -120,37 +135,29 @@ function install_to_path {
 
     print "**Sending NaCl stuff to ${REPY_PATH}"
 
-    echo "Deleting all directories in the ${REPY_PATH} (except repy folder)"
-    rm -rf ${REPY_PATH_BIN}
-    rm -rf ${REPY_PATH_LIB}
-    rm -rf ${REPY_PATH_SDK}
+    #echo "Deleting all directories in the ${REPY_PATH} (except repy folder)"
+    #rm -rf ${REPY_PATH_BIN}
+    #rm -rf ${REPY_PATH_LIB}
+    #rm -rf ${REPY_PATH_SDK}
 
     mkdir -p ${REPY_PATH_BIN}
     mkdir -p ${REPY_PATH_LIB}/glibc
     mkdir -p ${REPY_PATH_LIB}/libs
+    mkdir -p ${REPY_PATH_SDK}/toolchain/${OS_SUBDIR}_x86_glibc
+    mkdir -p ${REPY_PATH_SDK}/tools
 
-    cp -pvr ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk ${REPY_PATH_SDK}
+    ${RSYNC} ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/* ${REPY_PATH_SDK}/toolchain/${OS_SUBDIR}_x86_glibc
+    #we need some files from the original sdk to help compile some applications (e.g. zlib)
+    ${RSYNC} ${MISC_DIR}/pepper_28_tools/* ${REPY_PATH_SDK}/tools
 
-    cp -pvr ${NACL_BASE}/scons-out/${MODE}-x86-64/staging/* ${REPY_PATH_BIN}
+    ${RSYNC} ${NACL_BASE}/scons-out/${MODE}-x86-64/staging/* ${REPY_PATH_BIN}
 
     #install script
     cp -f ${MISC_DIR}/lind.sh ${REPY_PATH_BIN}/lind
     chmod +x ${REPY_PATH_BIN}/lind
-
-    cp ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH_LIB}/glibc
-    cp ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH_LIB}/libs
-}
-
-
-# Build then copy the SDK specific parts of the toolchain.
-#
-# 
-function build_sdk {
-    build_glibc_gcc
-    echo "Copying SDK"
-    mkdir -p ${REPY_PATH}
-    rm -rf ${REPY_PATH_SDK}
-    cp -pvr ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk ${REPY_PATH_SDK}
+    
+    ${RSYNC} ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH_LIB}/glibc
+    ${RSYNC} ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH_LIB}/libs
 }
 
 
@@ -212,14 +219,13 @@ function build_repy {
 
     print "Building Repy in $repy_src to $REPY_PATH" 
     cd ${NACL_REPY}
-    python preparetest.py -t ${REPY_PATH_REPY}
-    cp ${REPY_PATH_REPY}/serialize.repy ${REPY_PATH_REPY}/serialize.py
+    python preparetest.py -t -f ${REPY_PATH_REPY}
     print "Done building Repy in ${REPY_PATH_REPY}"
     cd seattlelib
     set -o errexit
     for file in *.mix
     do
-	${MISC_DIR}/check_inlcudes.sh $file
+	${MISC_DIR}/check_includes.sh $file
     done
     set +o errexit
     etags  --language-force=python *.mix *.repy
@@ -261,7 +267,7 @@ function nightly_build {
 
 function clean_install {
     rm -rf $REPY_PATH
-    touch $REPY_PATH
+    mkdir -p $REPY_PATH
 }
 
 
@@ -271,18 +277,9 @@ function clean_install {
 function build_nacl {
      print "Building NaCl"
      cd ${NACL_BASE} || exit -1
-     # first build standard NaCl
-     ./scons --verbose --mode=${MODE},nacl platform=x86-64 -j4 -k
-     # and check
-     rc=$?
-     if [ "$rc" -ne "0" ]; then
-	     print "NaCl Build Failed($rc)"
-	     echo -e "\a"
-	     exit $rc
-     fi
 
-     # and now the glibc version
-     ./scons --verbose --mode=${MODE},nacl platform=x86-64 --nacl_glibc -j4 -k
+     # build NaCl with glibc tests
+     ./scons --verbose --mode=${MODE},nacl platform=x86-64 --nacl_glibc -j4
      # and check
      rc=$?
      if [ "$rc" -ne "0" ]; then
@@ -336,6 +333,14 @@ function build_glibc {
      print "Done building toolchain"
 }
 
+function update_glibc {
+    cd ${NACL_TOOLCHAIN_BASE} && make updateglibc
+}
+
+function update_glibc2 {
+    cd ${NACL_TOOLCHAIN_BASE} && rm BUILD/stamp-glibc64
+    make BUILD/stamp-glibc64
+}
 
 # Run the glibc tester
 #
@@ -350,20 +355,8 @@ function glibc_tester {
     lind ${MISC_DIR}/glibc_test/glibc_tester.nexe
 }
 
-
-# Run the RPC generator
-#
-#
-function build_rpc {
-    set -o errexit
-    cd ${MISC_DIR}/rpcgen
-    python syscall_gen.py | indent
-    type -P indent &>/dev/null && indent lind_rpc_gen.c -o lind_rpc_gen.c || echo "Indent Not Found. Skipping reformatting rpc code." 
-    mv -vf lind_rpc_gen.* ${LIND_GLIBC_SRC}/sysdeps/nacl/
-}
-
 PS3="build what: " 
-list="all repy nacl glibc cleantoolchain cleannacl install install_deps liblind test_repy test_glibc test_apps sdk rpc test nightly"
+list="all repy nacl buildglibc updateglibc updateglibc2 cleantoolchain download cleannacl install liblind test_repy test_glibc test_apps sdk rpc test nightly"
 word=""
 if  test -z "$1" 
 then
@@ -388,15 +381,16 @@ do
 	    build_repy
     elif [ "$word" = "nacl" ]; then
 	    build_nacl
-    elif [ "$word" = "glibc" ]; then
+    elif [ "$word" = "buildglibc" ]; then
 	    build_glibc
-    elif [ "$word" = "sdk" ]; then
-	    build_sdk
+    elif [ "$word" = "updateglibc" ]; then
+            update_glibc
+    elif [ "$word" = "updateglibc2" ]; then
+            update_glibc2
     elif [ "$word" = "download" ]; then
             download_src
     elif [ "$word" = "all" ]; then
             download_src
-            build_rpc
 	    build_nacl
 	    build_glibc
 	    build_repy
@@ -427,15 +421,9 @@ do
 	    test_repy
 	    glibc_tester
 	    test_apps
-    elif [ "$word" = "rpc" ]; then
-	    print "Building new RPC stubs"
-	    build_rpc
     elif [ "$word" = "nightly" ]; then
 	    print "Nightly Build"
 	    nightly_build
-    elif [ "$word" = "install_deps" ]; then
-	    print "Installing Dependicies"
-	    install_deps
     else 
 	    echo "Error: Did not find a build target named $word. Exiting..."
 	    exit 1
