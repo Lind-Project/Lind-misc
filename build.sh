@@ -142,7 +142,6 @@ function install_to_path {
 
     mkdir -p ${REPY_PATH_BIN}
     mkdir -p ${REPY_PATH_LIB}/glibc
-    mkdir -p ${REPY_PATH_LIB}/libs
     mkdir -p ${REPY_PATH_SDK}/toolchain/${OS_SUBDIR}_x86_glibc
     mkdir -p ${REPY_PATH_SDK}/tools
 
@@ -157,7 +156,6 @@ function install_to_path {
     chmod +x ${REPY_PATH_BIN}/lind
     
     ${RSYNC} ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH_LIB}/glibc
-    ${RSYNC} ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/x86_64-nacl/lib/*  ${REPY_PATH_LIB}/libs
 }
 
 
@@ -209,15 +207,12 @@ function check_install_dir {
 #
 #
 function build_repy {
-    check_install_dir
 
     set -o errexit
 
-    # remove any old copies
-    rm -rf ${REPY_PATH_REPY}
     mkdir -p ${REPY_PATH_REPY}
 
-    print "Building Repy in $repy_src to $REPY_PATH" 
+    print "Building Repy in $REPY_SRC to $REPY_PATH" 
     cd ${NACL_REPY}
     python preparetest.py -t -f ${REPY_PATH_REPY}
     print "Done building Repy in ${REPY_PATH_REPY}"
@@ -228,7 +223,7 @@ function build_repy {
 	${MISC_DIR}/check_includes.sh $file
     done
     set +o errexit
-    etags  --language-force=python *.mix *.repy
+    #etags  --language-force=python *.mix *.repy
 }
 
 
