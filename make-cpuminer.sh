@@ -2,7 +2,6 @@
 
 export NACL_ARCH=x86_64
 export NACL_GLIBC=1
-export PACKAGE_NAME=tor
 export NACLPORTS_PREFIX=${REPY_PATH}/usr
 
 source ../naclports/src/build_tools/common.sh
@@ -20,44 +19,24 @@ export FREETYPE_CONFIG=${NACLPORTS_PREFIX_BIN}/freetype-config
 export PATH=${NACL_BIN_PATH}:${PATH};
 conf_host=${NACL_CROSS_PREFIX}
 
-Banner "Configure zlib"
-ChangeDir "../zlib-1.2.7"
-./configure\
-     --prefix=${NACLPORTS_PREFIX} -s
-make clean
-make
-make install
-make clean
-
-Banner "Configure openssl"
-ChangeDir "../openssl-1.0.1e"
-./config -d\
-     --prefix=${NACLPORTS_PREFIX} no-asm no-hw no-krb5 shared -D_GNU_SOURCE
-make clean
-make build_libs
-make install
-make clean
-
-Banner "Configure libevent"
-ChangeDir "../libevent-2.0.21-stable"
+Banner "Build curl-7.33.0"
+ChangeDir "../curl-7.33.0"
 Remove "build-nacl"
 MakeDir "build-nacl"
 cd "build-nacl"
 ../configure --prefix=${NACLPORTS_PREFIX} --host="i686-linux"
-make
+make V=1
 make install
 make clean
-ChangeDir ".."
+cd ".."
 
-Banner "Build tor"
-ChangeDir "../tor-0.2.3.25"
+Banner "Build cpuminer"
+ChangeDir "../cpuminer-2.3.2"
 Remove "build-nacl"
 MakeDir "build-nacl"
 cd "build-nacl"
-../configure --prefix=${NACLPORTS_PREFIX} --host=${conf_host} --disable-transparent \
-  --enable-static-tor --with-openssl-dir=${NACLPORTS_PREFIX} \
-  --with-libevent-dir=${NACLPORTS_PREFIX} --with-zlib-dir=${NACLPORTS_PREFIX}
-make
+LIBS="-lssl -lcrypto -lz" ../configure --prefix=${NACLPORTS_PREFIX} --host="i686-linux" --with-libcurl=${NACLPORTS_PREFIX}
+make V=1
 make install
 make clean
 cd ".."
