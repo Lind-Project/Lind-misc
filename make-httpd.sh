@@ -1,5 +1,6 @@
 #!/bin/bash
 
+export PACKAGE_NAME=httpd
 export NACL_ARCH=x86_64
 export NACL_GLIBC=1
 export NACLPORTS_PREFIX=${REPY_PATH}/usr

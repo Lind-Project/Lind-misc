@@ -82,7 +82,7 @@ function download_src {
   gclient config --name=native_client https://github.com/Lind-Project/native_client.git@lind --git-deps
   gclient sync
   cd ${NACL_TOOLCHAIN_BASE} && rm -fr SRC
-  make sync
+  make sync-pinned
   cd SRC
   mv glibc glibc_orig
   ln -s ${LIND_GLIBC_SRC} glibc
