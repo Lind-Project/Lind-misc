@@ -73,9 +73,6 @@ function download_src {
   git clone ${LIND_MISC_URL} misc
   
   git clone ${NACL_REPY_URL} nacl_repy
-  cd nacl_repy
-  git checkout -b one_proc_model origin/one_proc_model
-  cd ..
   
   mkdir -p ${NACL_SRC}
   cd ${NACL_SRC}
