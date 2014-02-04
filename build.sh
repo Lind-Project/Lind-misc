@@ -144,7 +144,7 @@ function install_to_path {
 
     ${RSYNC} ${NACL_TOOLCHAIN_BASE}/out/nacl-sdk/* ${REPY_PATH_SDK}/toolchain/${OS_SUBDIR}_x86_glibc
     #we need some files from the original sdk to help compile some applications (e.g. zlib)
-    ${RSYNC} ${MISC_DIR}/${OS_SUBDIR}_pepper_28_tools/* ${REPY_PATH_SDK}/tools
+    #${RSYNC} ${MISC_DIR}/${OS_SUBDIR}_pepper_28_tools/* ${REPY_PATH_SDK}/tools
 
     ${RSYNC} ${NACL_BASE}/scons-out/${MODE}-x86-64/staging/* ${REPY_PATH_BIN}
 
