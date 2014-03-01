@@ -1,6 +1,6 @@
-This is a simple example of using ptrace syscall to be used by a parent process to identify all syscalls used by another process in i386 and x86_64 systems.
+This is a simple example of using ptrace() system call to be used by a parent process to interecept all syscalls used by another process in i386 and x86_64 systems.
 
 To run:
-ptrace_debugger name_of_the_binary
+$ptrace_debugger name_of_the_binary arguments
 
-For example  $./ptrace_debuger /bin/ls generates a file called log.txt in the current directory containing the syscalls.
+For example "$./ptrace_debuger /bin/ls -ali" generates a file called "syscalls.log" in the current directory.
