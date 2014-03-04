@@ -43,10 +43,13 @@ pid_t init_ptrace(int argc, char** argv) {
   /* trace the child */
   if(tracee == 0) {
     /* to let the parent process to trace the child*/
-    ptrace(PTRACE_TRACEME, 0 , NULL, NULL); 
+    ptrace(PTRACE_TRACEME, 0, NULL, NULL); 
     
+    /* stop the current process*/
+    kill(getpid(), SIGSTOP);
+
     /* the binary or command to be executed */
-    execlp(argv[1], argv[1],argv[2], NULL);
+    execlp(argv[1], argv[1], argv[2], NULL);
   }
   return tracee;
 }
@@ -64,11 +67,11 @@ int intercept_calls(pid_t tracee){
       exit(-1);
     }
 
-  /* to distingiush between normal trap and syscall traps*/
+  /* to distinguish between normal traps and syscall traps*/
   ptrace(PTRACE_SETOPTIONS, tracee, NULL, PTRACE_O_TRACESYSGOOD);
  
   ptrace(PTRACE_SYSCALL, tracee, NULL, NULL);
- 
+  
   fprintf(fd, "syscall(number): return value \n");
   fprintf(fd, "------------------------------------\n");  
 
@@ -87,7 +90,7 @@ int intercept_calls(pid_t tracee){
       ptrace(PTRACE_GETREGS, tracee, NULL, &user_regs);
       syscall_num = user_regs.ORIG_REG;
       ret_val = user_regs.REG;
-      fprintf(fd,"%s(%d):  %d\n",  syscall_names[syscall_num], syscall_num, ret_val);
+      fprintf(fd, "%s(%d):  %d\n", syscall_names[syscall_num], syscall_num, ret_val);
     }
     
     /* resume the child */
