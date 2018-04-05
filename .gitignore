@@ -1,4 +1,12 @@
+# object files
+*.so*
+*.nexe
+*.o
 *.pyc
+
+# project files
 .cproject
 .project
 .pydevproject
+
+# vi:ft=cfg:
