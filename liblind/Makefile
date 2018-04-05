@@ -1,20 +1,22 @@
-CC = $(REPY_PATH)/sdk/linux_x86/bin/nacl64-gcc
+CC = $(REPY_PATH)/sdk/toolchain/linux_x86_glibc/bin/x86_64-nacl-gcc
 
 CFLAGS = -c -std=gnu99 -std=gnu99 -Wall -Wextra -Wno-long-long -fomit-frame-pointer -Wall -fdiagnostics-show-option -pedantic -m64 -D_GNU_SOURCE=1 -D__STDC_FORMAT_MACROS=1 -D_BSD_SOURCE=1 -D_POSIX_C_SOURCE=199506 -D_XOPEN_SOURCE=600 -Wno-unused-parameter
-INCLUDE = -I $(REPY_PATH)/sdk/linux_x86/nacl64/include/
+INCLUDE = -I $(REPY_PATH)/sdk/toolchain/linux_x86_glibc/x86_64-nacl/include/
 LDFLAGS = -melf64_nacl -m64
-LIBS_PATH = $(REPY_PATH)/sdk/linux_x86/nacl64/lib64
-RT_LIBS_PATH = $(REPY_PATH)lib/libs
+LIBS_PATH = $(REPY_PATH)/sdk/toolchain/linux_x86_glibc/x86_64-nacl/lib64
+RT_LIBS_PATH = $(REPY_PATH)/lib/libs
+
 all: installed_logger com1.nexe com2.nexe
-	echo ""
+	@echo "Done."
 
 installed_logger: liblogger.so
-	cp liblogger.so.0.0.1 $(LIBS_PATH)
-	ln -s $(LIBS_PATH)/liblogger.so.0.0.1 $(LIBS_PATH)/liblogger.so.0
-	ln -s $(LIBS_PATH)/liblogger.so.0.0.1 $(LIBS_PATH)/liblogger.so
+	mkdir -p $(LIBS_PATH) $(RT_LIBS_PATH)
+	cp liblogger.so.0.0.1 $(LIBS_PATH)/
+	ln -sfv $(LIBS_PATH)/liblogger.so.0.0.1 $(LIBS_PATH)/liblogger.so.0
+	ln -sfv $(LIBS_PATH)/liblogger.so.0.0.1 $(LIBS_PATH)/liblogger.so
 	cp liblogger.so.0.0.1 $(RT_LIBS_PATH)
-	ln -s $(RT_LIBS_PATH)/liblogger.so.0.0.1 $(RT_LIBS_PATH)/liblogger.so.0
-	ln -s $(RT_LIBS_PATH)/liblogger.so.0.0.1 $(RT_LIBS_PATH)/liblogger.so
+	ln -sfv $(RT_LIBS_PATH)/liblogger.so.0.0.1 $(RT_LIBS_PATH)/liblogger.so.0
+	ln -sfv $(RT_LIBS_PATH)/liblogger.so.0.0.1 $(RT_LIBS_PATH)/liblogger.so
 
 liblogger.so: logger.o
 	$(CC) -shared -Wl,-soname,liblogger.so.0 -o liblogger.so.0.0.1 $<
