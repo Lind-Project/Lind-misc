@@ -8,7 +8,8 @@ LIBS_PATH = $(REPY)/sdk/linux_x86/nacl64/lib64
 LDFLAGS = -L$(LIBS_PATH) -melf64_nacl -m64
 LDLIBS = -llogger
 
-all: installed_logger com1.nexe com2.nexe
+all:
+	$(MAKE) installed_logger com1.nexe com2.nexe
 	@echo "Done."
 
 installed_logger: repy_check liblogger.so
