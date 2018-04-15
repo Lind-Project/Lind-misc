@@ -21,7 +21,7 @@ installed_logger: repy_check liblogger.so
 	ln -sfv $(RT_LIBS_PATH)/liblogger.so.0.0.1 $(RT_LIBS_PATH)/liblogger.so
 
 liblogger.so: logger.o
-	$(LD) -shared -Wl,-soname,liblogger.so.0 -o liblogger.so.0.0.1 $<
+	$(CC) -shared -Wl,-soname,liblogger.so.0 -o liblogger.so.0.0.1 $<
 
 com1.nexe: simple_tester.o sostub.o liblind.o
 	$(LD) $(LDFLAGS) $? -o $@
