@@ -1,7 +1,8 @@
 REPY != realpath $(REPY_PATH) 2>/dev/null || echo $(REPY_PATH)
 CC = $(REPY)/sdk/linux_x86/bin/x86_64-nacl-gcc
+LD = $(CC)
 CFLAGS = -c -std=gnu99 -std=gnu99 -Wall -Wextra -Wno-long-long -fomit-frame-pointer -Wall -fdiagnostics-show-option -pedantic -m64 -D_GNU_SOURCE=1 -D__STDC_FORMAT_MACROS=1 -D_BSD_SOURCE=1 -D_POSIX_C_SOURCE=199506 -D_XOPEN_SOURCE=600 -Wno-unused-parameter
-INCLUDE = -I $(REPY)/sdk/linux_x86/nacl64/include
+INCLUDE = -I$(REPY)/sdk/linux_x86/nacl64/include
 RT_LIBS_PATH = $(REPY)lib/libs
 LIBS_PATH = $(REPY)/sdk/linux_x86/nacl64/lib64
 LDFLAGS = -L$(LIBS_PATH) -melf64_nacl -m64
@@ -20,13 +21,13 @@ installed_logger: repy_check liblogger.so
 	ln -sfv $(RT_LIBS_PATH)/liblogger.so.0.0.1 $(RT_LIBS_PATH)/liblogger.so
 
 liblogger.so: logger.o
-	$(CC) -shared -Wl,-soname,liblogger.so.0 -o liblogger.so.0.0.1 $<
+	$(LD) -shared -Wl,-soname,liblogger.so.0 -o liblogger.so.0.0.1 $<
 
 com1.nexe: simple_tester.o sostub.o liblind.o
-	$(CC) $(LDFLAGS) $? -o $@
+	$(LD) $(LDFLAGS) $? -o $@
 
 com2.nexe: installed_logger soserver.o liblind.o
-	$(CC) $(LDFLAGS) $(LDLIBS) soserver.o liblind.o -o $@
+	$(LD) $(LDFLAGS) $(LDLIBS) soserver.o liblind.o -o $@
 
 logger.o: %.o: logger.c
 	$(CC) -fPIC $(CFLAGS) $(INCLUDE) $< -o $@
