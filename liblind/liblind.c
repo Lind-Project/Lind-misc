@@ -26,7 +26,7 @@ static void lind_connect() {
     _lind_fd = open("lind://component-manager", 0, O_RDONLY|O_NONBLOCK);
     if (_lind_fd == -1) {
       perror("Connect failed: Problem opening ioctl channel");
-      
+
     }
   }
   printf("Connected\n");
@@ -39,7 +39,7 @@ static void lind_connect() {
 int comp_interface_attach(cid who, mailbox interface) {
   lind_connect();
   struct cia_s cia = {0,0};
-  
+
   cia.who = who;
   cia.interface = interface;
   int fd = lind_fd();
@@ -48,8 +48,8 @@ int comp_interface_attach(cid who, mailbox interface) {
   if(rc == -1) {
     perror("Problem with ioctl channel in compoent interface attach");
     return -1;
-  }   
-  
+  }
+
   return rc;
 
 }
@@ -68,7 +68,7 @@ int comp_call(mailbox dest, size_t message_size, void * message) {
   if(rc == -1) {
     perror("Problem with ioctl channel.");
     return -1;
-  }   
+  }
 
   return rc;
 
@@ -80,12 +80,12 @@ int comp_call(mailbox dest, size_t message_size, void * message) {
 /** Wait for communication from CID in mailbox MB.
  */
 cid comp_accept(mailbox mb, void* buff, size_t max) {
-  lind_connect(); 
+  lind_connect();
   int rc = -1;
   struct comp_accept_s args = {0, NULL, 0};
-  args.mb = mb; 
-  args.buff = buff; 
-  args.max = max; 
+  args.mb = mb;
+  args.buff = buff;
+  args.max = max;
   int fd = lind_fd();
   rc = ioctl(fd, LIND_ACCEPT_IOCTL, sizeof(args),  &args);
 
@@ -94,7 +94,7 @@ cid comp_accept(mailbox mb, void* buff, size_t max) {
     return -1;
   }
 
-  return rc; 
+  return rc;
 
 }
 
@@ -123,7 +123,7 @@ cid comp_lookup(const char * name, const char * version, const char * interface)
  TYPE is either MAILBOX_SHARED or MAILBOX_SPLIT*/
 stub_warning(comp_create_mailbox);
 mailbox comp_create_mailbox(const char * interface, int type) {
-  
+
 }
 
 
