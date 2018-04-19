@@ -3,7 +3,7 @@ CC = $(REPY)/sdk/toolchain/linux_x86_glibc/bin/x86_64-nacl-gcc
 LD = $(CC)
 CFLAGS = -c -std=gnu99 -std=gnu99 -Wall -Wextra -Wno-long-long -fomit-frame-pointer -Wall -fdiagnostics-show-option -pedantic -m64 -D_GNU_SOURCE=1 -D__STDC_FORMAT_MACROS=1 -D_BSD_SOURCE=1 -D_POSIX_C_SOURCE=199506 -D_XOPEN_SOURCE=600 -Wno-unused-parameter
 INCLUDE = -I$(REPY)/sdk/toolchain/linux_x86_glibc/nacl64/include
-RT_LIBS_PATH = $(REPY)/lib/glibc
+RT_LIBS_PATH = $(REPY)/glibc
 LIBS_PATH = $(REPY)/sdk/toolchain/linux_x86_glibc/nacl64/lib64
 LDFLAGS = -L$(LIBS_PATH) -melf64_nacl -m64
 LDLIBS = -llogger
