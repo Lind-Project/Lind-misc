@@ -3,7 +3,7 @@ CC = $(REPY)/sdk/toolchain/linux_x86_glibc/bin/x86_64-nacl-gcc
 LD = $(CC)
 CFLAGS = -c -std=gnu99 -std=gnu99 -Wall -Wextra -Wno-long-long -fomit-frame-pointer -Wall -fdiagnostics-show-option -pedantic -m64 -D_GNU_SOURCE=1 -D__STDC_FORMAT_MACROS=1 -D_BSD_SOURCE=1 -D_POSIX_C_SOURCE=199506 -D_XOPEN_SOURCE=600 -Wno-unused-parameter
 INCLUDE = -I$(REPY)/sdk/toolchain/linux_x86_glibc/nacl64/include
-RT_LIBS_PATH = $(REPY)lib/libs
+RT_LIBS_PATH = $(REPY)/lib/glibc
 LIBS_PATH = $(REPY)/sdk/toolchain/linux_x86_glibc/nacl64/lib64
 LDFLAGS = -L$(LIBS_PATH) -melf64_nacl -m64
 LDLIBS = -llogger
@@ -17,7 +17,7 @@ installed_logger: repy_check liblogger.so
 	cp liblogger.so.0.0.1 $(LIBS_PATH)/
 	ln -sfv $(LIBS_PATH)/liblogger.so.0.0.1 $(LIBS_PATH)/liblogger.so.0
 	ln -sfv $(LIBS_PATH)/liblogger.so.0.0.1 $(LIBS_PATH)/liblogger.so
-	cp liblogger.so.0.0.1 $(RT_LIBS_PATH)
+	cp liblogger.so.0.0.1 $(RT_LIBS_PATH)/
 	ln -sfv $(RT_LIBS_PATH)/liblogger.so.0.0.1 $(RT_LIBS_PATH)/liblogger.so.0
 	ln -sfv $(RT_LIBS_PATH)/liblogger.so.0.0.1 $(RT_LIBS_PATH)/liblogger.so
 
