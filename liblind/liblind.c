@@ -6,8 +6,6 @@
 #include <fcntl.h>
 #include <stdio.h>
 
-
-
 static int _lind_fd = 0;
 
 int lind_fd(void)
