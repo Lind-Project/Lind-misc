@@ -12,9 +12,7 @@
 
 
 #define stub_warning(name) \
-  do {													\
-	  link_warning(name, "the `" #name "' function is not implemented and will always fail");	\
-  } while (0)
+	  link_warning(name, "the `" #name "' function is not implemented and will always fail")
 
 int lind_fd(void);
 
