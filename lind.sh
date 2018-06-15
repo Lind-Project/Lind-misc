@@ -16,4 +16,5 @@ trap 'cd "$cwd"' EXIT
 
 cd "$REPY_PATH/repy" || exit 1
 
-sel_ldr -a -- /lib/glibc/runnable-ld.so --library-path /lib/glibc "$@"
+sel_ldr -a -- "$LD_LIBRARY_PATH/runnable-ld.so" --library-path "$LD_LIBRARY_PATH" "$@"
+
