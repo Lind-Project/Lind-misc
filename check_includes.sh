@@ -1,36 +1,33 @@
-#! /bin/bash
+#!/bin/bash
 # Given a repy file with preprocessor directives, check they are all valid
 
+# get basename and dirname
+file_name="${1##*/}"
+file_path="${1%%$file_name}"
 
-f=$1
-file_path=`dirname $f`
-file_name=`basename $f`
+# handle no directory parts in pathname and strip trailing '/'
+if [[ -z "$file_path" ]]; then
+	file_path="."
+else
+	file_path="${file_path##/}"
+fi
 
-files=`grep -e ^include $f | awk '{print $2}'|tr "\\n" " "`
+# build path set
+paths+=("$file_path/")
+paths+=("$file_path/fs/")
+paths+=("$file_path/net/")
+paths+=("$file_path/sys/")
+paths+=("$file_path/lind/")
+paths+=("$file_path/xmplrpc/")
+paths+=("$file_path/librepy/")
 
-rc=0
+# build the list of files to include
+mapfile -t files < <(awk '/^include/{print $2}' "$1")
 
-for file in $files 
-do
-    real_f=$file_path/$file
-    fs_files=$file_path/fs/$file
-    net_files=$file_path/net/$file
-    sys_files=$file_path/sys/$file
-    lind_files=$file_path/lind/$file
-    xmlrpc_files=$file_path/xmplrpc/$file
-    librepy_files=$file_path/librepy/$file
-
-    if [ ! -f $real_f ] && \
-       [ ! -f $fs_files ] && \
-       [ ! -f $net_files ] && \
-       [ ! -f $sys_files ] && \
-       [ ! -f $lind_files ] && \
-       [ ! -f $xmlrpc_files ] && \
-       [ ! -f $librepy_files ]
-    then
-	echo "Error: include $file is missing in $file_name"
-	rc=1
-    fi
-done 
-
-exit $rc
+# map includes over path set and abort if not found in any of the paths
+for file in "${files[@]}"; do
+	if [[ -z "$(find "${paths[@]}" -type f -name "$file" 2>/dev/null)" ]]; then
+		printf 'Error: include %s is missing in %s.\n' "$file" "$file_name" >&2
+		exit 1
+	fi
+done
