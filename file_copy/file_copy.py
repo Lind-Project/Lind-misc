@@ -1,4 +1,4 @@
-#!/usr/bin/python2.6
+#!/usr/bin/env python2
 
 ###
 # file_copy.py
@@ -10,10 +10,7 @@
 
 #TODO: add rm command!
 
-import sys
-import os
-import stat
-import hashlib
+import sys, os, stat, hashlib
 
 # read / write size in bytes
 BLOCK_SIZE = 4096

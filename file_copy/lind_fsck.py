@@ -1,12 +1,17 @@
-#!/usr/bin/python2.6
+#!/usr/bin/env python2
 
-import sys
-import os
-sys.path.append("/home/lind/tmp/lind/repy/")
+import sys, os
+
+# add repy install path to script
+path = os.getenv("REPY_PATH")
+if path == None:
+    print "Error: REPY_PATH enviroment variable must be set, using default"
+    path = "/home/lind/tmp/lind/"
+sys.path.append("/usr/lind_project/lind/repy/")
+
 import wrapped_lind_fs_calls as lind_fs_calls
 from lind_fs_constants import *
-import argparse
-import stat
+import argparse, stat
 
 #there are many errors that can be found in the filesystem
 #this class is sort of like an enumerator for those errors
