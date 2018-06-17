@@ -1355,4 +1355,4 @@ EOF
 #
 # Invoke the initialization functions
 #
-v
+virtualenvwrapper_initialize

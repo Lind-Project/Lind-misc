@@ -176,6 +176,7 @@ readonly REPY_PATH_LIB="$REPY_PATH/lib"
 readonly REPY_PATH_SDK="$REPY_PATH/sdk"
 readonly NACL_SDK_ROOT="$REPY_PATH_SDK"
 
+readonly LIND_URL='https://github.com/Lind-Project/lind_project.git'
 readonly LIND_EXPERIMENTS_URL='https://github.com/Lind-Project/lind_experiments.git'
 readonly LIND_MISC_URL='https://github.com/Lind-Project/Lind-misc.git'
 readonly THIRD_PARTY_URL='https://github.com/Lind-Project/third_party.git'
@@ -227,7 +228,13 @@ function download_src() {
 	# clone and symlink dependencies
 	mkdir -p "$LIND_SRC"
 	cd "$LIND_BASE"
-	git submodule update --checkout --init --recursive --remote .
+
+	# make sure we are in the git root of "Lind-Project/lind_project"
+	if git remote add origin "$LIND_URL"; then
+		git fetch --all
+		git checkout master
+	fi
+	git submodule update --checkout --init --recursive --remote . || true
 	git_deps[lind_experiments]="$LIND_EXPERIMENTS_URL"
 	git_deps[lind-misc]="$LIND_MISC_URL"
 	git_deps[third_party]="$THIRD_PARTY_URL"
@@ -236,6 +243,7 @@ function download_src() {
 	git_deps[nacl-gcc]="$NACL_GCC_URL"
 	git_deps[nacl-binutils]="$NACL_BINUTILS_URL"
 	git_deps[lind_glibc]="$LIND_GLIBC_URL"
+	# fallback
 	for dir in "${!git_deps[@]}"; do
 		[[ ! -e "$dir" ]] && git clone -b lind_fork "${git_deps[$dir]}" "$dir"
 		rm -rf "${LIND_SRC:?}/$dir"
