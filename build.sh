@@ -314,9 +314,6 @@ function download_src() {
 		cd "$NACL_TOOLCHAIN_BASE"
 		rm -rf SRC
 		make sync-pinned
-		git fetch --all
-		git clean -df
-		git reset --hard origin/lind_fork
 		cd SRC
 		rm -rf glibc gcc binutils
 		ln -Tsfv "$LIND_GLIBC_SRC" glibc
