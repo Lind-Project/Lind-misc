@@ -1,18 +1,50 @@
-#!/bin/sh
+#!/bin/bash
+
+cwd="$PWD"
+extra_args=('-a')
+usage="usage: ${0##*/} [-a <sel_ldr extra args>] [-l <blob library>] [-fghsvx] <lind program path>"
+trap 'cd "$cwd"' EXIT
 
 # check for xtrace flag
-while getopts :hx opt; do
+while getopts :a:l:fghsvx opt; do
 	case "$opt" in
+	# append custom args
+	a)
+		readarray -td' ' extra_args < <(printf '%s ' "${extra_args[@]}" "$OPTARG")
+		;;
+	# enable fuzz testing (quit after leading nacl app)
+	f)
+		if [[ "${extra_args[*]}" != *-F* ]]; then extra_args=('-F'); fi
+		;;
+	# enable gdb debug stub
+	g)
+		if [[ "${extra_args[*]}" != *-g* ]]; then extra_args=('-g'); fi
+		;;
+	# add blob library
+	l)
+		extra_args+=('-B' "$OPTARG")
+		;;
+	# enable signal handling
+	s)
+		if [[ "${extra_args[*]}" != *-S* ]]; then extra_args=('-S'); fi
+		;;
+	# increase verbosity
+	v)
+		extra_args+=('-v')
+		;;
+	# use xtrace
 	x)
 		set -o xtrace
 		;;
+	# show sel_ldr -h and usage
 	h)
-		printf 'usage: %s [-x] <lind program path>\n' "${0##*/}" >&2
+		sel_ldr -h
+		printf '\n%s\n' "$usage" >&2
 		exit
 		;;
+	# show error and usage
 	:|?)
-		printf 'illegal option letter: %s\n' "'$OPTARG'" >&2
-		printf 'usage: %s [-x] <lind program path>\n' "${0##*/}" >&2
+		printf '\nillegal option letter: %s\n\n%s\n' "'$OPTARG'" "$usage" >&2
 		exit 1
 		;;
 	esac
@@ -29,9 +61,6 @@ export PYTHON="${PYTHON:-python2}"
 export PNACLPYTHON="${PNACLPYTHON:-python2}"
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/lib/glibc}"
 
-cwd="$PWD"
-trap 'cd "$cwd"' EXIT
-
 cd "$REPY_PATH/repy" || exit 1
 
-sel_ldr -a -- "$LD_LIBRARY_PATH/runnable-ld.so" --library-path "$LD_LIBRARY_PATH" "$@"
+sel_ldr "${extra_args[@]}" -- "$LD_LIBRARY_PATH/runnable-ld.so" --library-path "$LD_LIBRARY_PATH" "$@"
