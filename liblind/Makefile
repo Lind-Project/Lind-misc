@@ -1,4 +1,4 @@
-REPY != realpath $(REPY_PATH) 2>/dev/null || echo $(REPY_PATH)
+REPY := $(shell realpath $(REPY_PATH) 2>/dev/null || echo $(REPY_PATH))
 CC := $(REPY)/sdk/toolchain/linux_x86_glibc/bin/x86_64-nacl-gcc
 LD := $(CC)
 LDLIBS := -llogger
