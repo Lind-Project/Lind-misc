@@ -1,24 +1,34 @@
 #!/bin/bash
 
+# script configuration variables
 cwd="$PWD"
 extra_args=('-a')
+ldr_cmd=('sel_ldr')
+ldr_args=()
+gdb_arg_str=''
+print_arg_str=''
 usage="usage: ${0##*/} [-a <sel_ldr extra args>] [-l <blob library>] [-fghsvx] <lind program path>"
+
 trap 'cd "$cwd"' EXIT
 
 # check for xtrace flag
-while getopts :a:l:fghsvx opt; do
+while getopts :a:l:dfghsvx opt; do
 	case "$opt" in
 	# append custom args
 	a)
 		readarray -td' ' extra_args < <(printf '%s ' "${extra_args[@]}" "$OPTARG")
 		;;
+	# enable gdb debug hook
+	d)
+		[[ "${extra_args[*]}" != *-g* ]] && extra_args=('-g')
+		;;
 	# enable fuzz testing (quit after leading nacl app)
 	f)
-		if [[ "${extra_args[*]}" != *-F* ]]; then extra_args=('-F'); fi
+		[[ "${extra_args[*]}" != *-F* ]] && extra_args=('-F')
 		;;
-	# enable gdb debug stub
+	# enable gdb debug args
 	g)
-		if [[ "${extra_args[*]}" != *-g* ]]; then extra_args=('-g'); fi
+		gdb_arg_str='run'
 		;;
 	# add blob library
 	l)
@@ -26,7 +36,7 @@ while getopts :a:l:fghsvx opt; do
 		;;
 	# enable signal handling
 	s)
-		if [[ "${extra_args[*]}" != *-S* ]]; then extra_args=('-S'); fi
+		[[ "${extra_args[*]}" != *-S* ]] && extra_args=('-S')
 		;;
 	# increase verbosity
 	v)
@@ -63,4 +73,16 @@ export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/lib/glibc}"
 
 cd "$REPY_PATH/repy" || exit 1
 
-sel_ldr "${extra_args[@]}" -- "$LD_LIBRARY_PATH/runnable-ld.so" --library-path "$LD_LIBRARY_PATH" "$@"
+ldr_args+=("${extra_args[@]}" -- "$LD_LIBRARY_PATH/runnable-ld.so" --library-path "$LD_LIBRARY_PATH" "$@")
+
+if [[ -n "$gdb_arg_str" ]]; then
+	# concatenate so we can pass the argument list to gdb
+	gdb_arg_str="$gdb_arg_str ${ldr_args[*]}"
+	# add quotes to improve clarity when printing final command
+	print_arg_str="-q -ex \"$gdb_arg_str\" sel_ldr"
+	ldr_cmd=('gdb')
+	ldr_args=('-q' '-ex' "$gdb_arg_str" 'sel_ldr')
+fi
+
+printf '\nexecuting: [%s %s]\n' "${ldr_cmd[*]}" "$print_arg_str" >&2
+"${ldr_cmd[@]}" "${ldr_args[@]}"
