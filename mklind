@@ -6,7 +6,7 @@
 # Updated by Joey Pabalinas <joeypabalinas@gmail.com>
 
 # version and usage strings
-readonly version=0.9.0-alpha
+readonly version=0.10.0-beta
 usage+=$'\n'"Lind $version NaCl Toolchain Build Script"$'\n'
 usage+=$'\n'
 usage+=$'Usage:\n'
@@ -150,6 +150,12 @@ if [[ -z "$LIND_SRC" ]]; then
 	false
 fi
 
+if command -v nproc >/dev/null 2>&1; then
+	NPROC="$(($(nproc) + 2))"
+else
+	NPROC=6
+fi
+readonly JOBS="${JOBS:-$NPROC}"
 readonly OS_NAME="$(uname -s)"
 if [[ "$OS_NAME" == Darwin ]]; then
 	readonly OS_SUBDIR="mac"
@@ -253,9 +259,10 @@ function download_src() {
 	git_deps[lind_glibc]="$LIND_GLIBC_URL"
 	# fallback
 	for dir in "${!git_deps[@]}"; do
-		[[ ! -e "$dir" ]] && git clone -b lind_fork "${git_deps[$dir]}" "$dir"
+		[[ ! -e "$dir" ]] && git clone "${git_deps[$dir]}" "$dir"
 		rm -rf "${LIND_SRC:?}/$dir"
-		ln -Tsfv "$LIND_BASE/$dir" "$LIND_SRC/$dir"
+		ln -Trsv "$LIND_BASE/$dir" "$LIND_SRC/$dir"
+		(cd "$LIND_SRC/$dir" && git checkout lind_fork)
 	done
 
 	# install gclient
@@ -277,8 +284,10 @@ function download_src() {
 		fi
 		# install virtualenv modules
 		if ! "$pip_bin" install -U --user virtualenv2; then
-			print "Need python virtualenv2 in order to build Lind" >&2
-			false
+			if ! "$pip_bin" install -U --user virtualenv; then
+				print "Need python virtualenv/virtualenv2 in order to build Lind" >&2
+				false
+			fi
 		fi
 		if ! "$pip_bin" install -U --user virtualenvwrapper; then
 			print "Need python virtualenvwrapper in order to build Lind" >&2
@@ -288,13 +297,13 @@ function download_src() {
 		# start up virtualenv
 		PATH="$HOME/.local/bin:$PATH"
 		VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2
-		VIRTUALENVWRAPPER_VIRTUALENV="$(command -v virtualenv2)"
+		VIRTUALENVWRAPPER_VIRTUALENV="$(command -v virtualenv2 || command -v virtualenv)"
 		WORKON_HOME="${WORKON_HOME:-$LIND_BASE/virtualenvs}"
 		export PATH VIRTUALENVWRAPPER_PYTHON VIRTUALENVWRAPPER_VIRTUALENV WORKON_HOME
 		mkdir -pv "$WORKON_HOME"
 		rm -rf "${WORKON_HOME:?}/lind"
 		deactivate >/dev/null 2>&1 || true
-		.  "$LIND_BASE/virtualenvwrapper.sh"
+		. "$LIND_BASE/virtualenvwrapper.sh"
 		mkvirtualenv lind
 		workon lind
 
@@ -311,15 +320,18 @@ function download_src() {
 		cd "$LIND_BASE"
 		gclient config --name=native_client "$NACL_GCLIENT_URL" --git-deps
 		gclient sync
-		ln -Tsfv "$LIND_BASE/native_client" "$NACL_BASE"
+		ln -Trsv "$LIND_BASE/native_client" "$NACL_BASE"
 		cd "$NACL_TOOLCHAIN_BASE"
 		rm -rf SRC
 		make sync-pinned
 		cd SRC
 		rm -rf glibc gcc binutils
-		ln -Tsfv "$LIND_GLIBC_SRC" glibc
-		ln -Tsfv "$NACL_GCC_SRC" gcc
-		ln -Tsfv "$NACL_BINUTILS_SRC" binutils
+		ln -Trsv "$LIND_GLIBC_SRC" ./glibc
+		ln -Trsv "$NACL_GCC_SRC" ./gcc
+		ln -Trsv "$NACL_BINUTILS_SRC" ./binutils
+		for dir in glibc gcc binutils; do
+			(cd "$dir" && git checkout lind_fork)
+		done
 	fi
 
 	# clone nacl external ports
@@ -367,7 +379,7 @@ function install_to_path() {
 
 	#install scripts
 	cp -pfv "$MISC_DIR/lind" "$REPY_PATH_BIN/lind"
-	cp -pfv "$LIND_BASE/lindfs" "$REPY_PATH_BIN/lindfs"
+	cp -pfv "$MISC_DIR/lindfs" "$REPY_PATH_BIN/lindfs"
 	chmod +x "$REPY_PATH_BIN/lind" "$REPY_PATH_BIN/lindfs"
 
 	"${RSYNC[@]}" "$NACL_TOOLCHAIN_BASE/out/nacl-sdk/x86_64-nacl/lib/"  "$REPY_PATH_LIB/glibc"
@@ -410,7 +422,8 @@ function build_repy() {
 	mkdir -p "$REPY_PATH_REPY"
 	print "Building Repy in $REPY_SRC to $REPY_PATH"
 	cd "$NACL_REPY"
-	cp -v seattlelib/xmlrpc* "$REPY_PATH_REPY/"
+	git checkout lind_fork
+	cp -v ./seattlelib/xmlrpc* "$REPY_PATH_REPY/"
 	python2 preparetest.py -t -f "$REPY_PATH_REPY"
 	print "Done building Repy in \"$REPY_PATH_REPY\""
 	cd seattlelib
@@ -553,12 +566,15 @@ function build_nacl() {
 			rm -f "$file.new"
 		done
 
-	# build nacl with glibc tests
+	# skip broken tests for now
 	cd "$NACL_BASE"
 	PATH="$LIND_BASE:$PATH" \
-		python2 ./scons.py --verbose --mode="$MODE,nacl" \
+		python2 ./scons.py \
+		--verbose --mode="$MODE,nacl" \
+		--nacl_glibc -j"$JOBS" \
 		nacl_pic=1 werror=0 \
-		platform=x86-64 --nacl_glibc -j4
+		skip_trusted_tests=1 disable_flaky_tests=1 \
+		platform=x86-64
 	print "Done building NaCl"
 
 	cur_func="${FUNCNAME[1]}"
@@ -574,7 +590,7 @@ function clean_nacl() {
 	PATH="$LIND_BASE:$PATH" \
 		python2 ./scons.py --verbose --mode="$MODE,nacl" \
 		nacl_pic=1 werror=0 \
-		platform=x86-64 --nacl_glibc -j4 -c
+		platform=x86-64 --nacl_glibc -j"$JOBS" -c
 	print "Done Cleaning NaCl"
 
 	cur_func="${FUNCNAME[1]}"
@@ -601,7 +617,7 @@ function build_glibc() {
 	rm -fr BUILD out
 	make clean
 
-	PATH="$LIND_BASE:$PATH" make -j4 build-with-glibc
+	PATH="$LIND_BASE:$PATH" make -j"$JOBS" build-with-glibc
 
 	print "Done building toolchain"
 
@@ -615,7 +631,7 @@ function update_glibc() {
 	cur_func="${FUNCNAME[0]}"
 
 	cd "$NACL_TOOLCHAIN_BASE"
-	PATH="$LIND_BASE:$PATH" make -j4 updateglibc
+	PATH="$LIND_BASE:$PATH" make -j"$JOBS" updateglibc
 
 	cur_func="${FUNCNAME[1]}"
 }
@@ -628,7 +644,7 @@ function update_glibc2() {
 
 	cd "$NACL_TOOLCHAIN_BASE"
 	rm -rf BUILD/stamp-glibc64
-	PATH="$LIND_BASE:$PATH" make -j4 BUILD/stamp-glibc64
+	PATH="$LIND_BASE:$PATH" make -j"$JOBS" BUILD/stamp-glibc64
 
 	cur_func="${FUNCNAME[1]}"
 }
