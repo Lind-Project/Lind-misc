@@ -1,15 +1,12 @@
 #!/bin/bash
 
 # script configuration variables
-cwd="$PWD"
 extra_args=('-a')
 ldr_cmd=('sel_ldr')
 ldr_args=()
 gdb_arg_str=''
 print_arg_str=''
 usage="usage: ${0##*/} [-a <sel_ldr extra args>] [-l <blob library>] [-fghsvx] <lind program path>"
-
-trap 'cd "$cwd"' EXIT
 
 # check for xtrace flag
 while getopts :a:l:dfghsvx opt; do
