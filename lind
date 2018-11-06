@@ -64,13 +64,13 @@ cd "$REPY_PATH/repy" || exit 1
 print_arg_str+="${extra_args[*]} -- \"$LD_LIBRARY_PATH/runnable-ld.so\" --library-path \"$LD_LIBRARY_PATH\" $*"
 ldr_args+=("${extra_args[@]}" -- "$LD_LIBRARY_PATH/runnable-ld.so" --library-path "$LD_LIBRARY_PATH" "$@")
 
-if [[ -n "$gdb_arg_str" ]]; then
+if [[ -n "${gdb_arg_str[*]}" ]]; then
 	# concatenate so we can pass the argument list to gdb
-	gdb_arg_str="$gdb_arg_str ${ldr_args[*]}"
+	gdb_arg_str=("${gdb_arg_str[@]}" "${ldr_args[@]}")
 	# add quotes to improve clarity when printing final command
-	print_arg_str="-q -ex \"$gdb_arg_str\" sel_ldr"
+	print_arg_str="-q -ex '${gdb_arg_str[*]}' sel_ldr"
 	ldr_cmd=('gdb')
-	ldr_args=('-q' '-ex' "$gdb_arg_str" 'sel_ldr')
+	ldr_args=('-q' '-ex' "$(printf '%q ' "${gdb_arg_str[@]}")" 'sel_ldr')
 fi
 
 printf '\nexecuting: [%s %s]\n' "${ldr_cmd[*]}" "$print_arg_str" >&2
