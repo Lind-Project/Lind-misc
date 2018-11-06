@@ -4,56 +4,47 @@
 extra_args=('-a')
 ldr_cmd=('sel_ldr')
 ldr_args=()
-gdb_arg_str=''
+gdb_arg_str=('')
 print_arg_str=''
-usage="usage: ${0##*/} [-a <sel_ldr extra args>] [-l <blob library>] [-fghsvx] <lind program path>"
+usage="usage: ${0##*/} -[fghsvx] [-a <sel_ldr extra args>] [-l <blob library>] -- [nacl_file] [args]"
 
 # check for xtrace flag
 while getopts :a:l:dfghsvx opt; do
 	case "$opt" in
 	# append custom args
 	a)
-		readarray -td' ' extra_args < <(printf '%s ' "${extra_args[@]}" "$OPTARG")
-		;;
+		readarray -td' ' extra_args < <(printf '%s ' "${extra_args[@]}" "$OPTARG");;
 	# enable gdb debug hook
 	d)
-		[[ "${extra_args[*]}" != *-g* ]] && extra_args=('-g')
-		;;
+		[[ "${extra_args[*]}" != *-g* ]] && extra_args=('-g');;
 	# enable fuzz testing (quit after leading nacl app)
 	f)
-		[[ "${extra_args[*]}" != *-F* ]] && extra_args=('-F')
-		;;
+		[[ "${extra_args[*]}" != *-F* ]] && extra_args=('-F');;
 	# enable gdb debug args
 	g)
-		gdb_arg_str='run'
-		;;
+		gdb_arg_str=('run');;
 	# add blob library
 	l)
-		extra_args+=('-B' "$OPTARG")
-		;;
+		extra_args+=('-B' "$OPTARG");;
 	# enable signal handling
 	s)
-		[[ "${extra_args[*]}" != *-S* ]] && extra_args=('-S')
-		;;
+		[[ "${extra_args[*]}" != *-S* ]] && extra_args=('-S');;
 	# increase verbosity
 	v)
-		extra_args+=('-v')
-		;;
+		extra_args+=('-v');;
 	# use xtrace
 	x)
-		set -o xtrace
-		;;
-	# show sel_ldr -h and usage
+		set -o xtrace;;
+	# show sel_ldr usage
 	h)
-		sel_ldr -h
-		printf '\n%s\n' "$usage" >&2
-		exit
-		;;
+		printf '%s\n' "$usage" >&2
+		sel_ldr --help 2>&1 | sed '1 d' >&2
+		exit;;
 	# show error and usage
 	:|?)
-		printf '\nillegal option letter: %s\n\n%s\n' "'$OPTARG'" "$usage" >&2
-		exit 1
-		;;
+		printf 'illegal option: -%s\n' "$OPTARG" >&2
+		printf '%s\n' "$usage" >&2
+		exit 1;;
 	esac
 done
 shift "$((OPTIND - 1))"
