@@ -75,3 +75,10 @@ fi
 
 printf '\nexecuting: [%s %s]\n' "${ldr_cmd[*]}" "$print_arg_str" >&2
 "${ldr_cmd[@]}" "${ldr_args[@]}"
+
+# ignore SIGTERM
+ret=$?
+if ((!ret || ret == 143)); then
+	exit
+fi
+exit "$ret"
