@@ -1,11 +1,21 @@
 #!/bin/bash
 
+export LIND_PREFIX="${LIND_PREFIX:-$HOME}"
+export LIND_BASE="${LIND_BASE:-$LIND_PREFIX/lind_project}"
+export LIND_SRC="${LIND_SRC:-$LIND_BASE/lind}"
+export LIND_MONITOR="${LIND_MONITOR:-$LIND_BASE/reference_monitor}"
+export REPY_PATH="${REPY_PATH:-$LIND_SRC/repy}"
+export NACL_SDK_ROOT="${NACL_SDK_ROOT:-$REPY_PATH/sdk}"
+export PYTHON="${PYTHON:-python2}"
+export PNACLPYTHON="${PNACLPYTHON:-python2}"
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-/lib/glibc}"
+
 export PACKAGE_NAME=httpd
 export NACL_ARCH=x86_64
 export NACL_GLIBC=1
 export NACLPORTS_PREFIX=${REPY_PATH}/usr
 
-source ../naclports/src/build_tools/common.sh
+source ../naclports/build_tools/common.sh
 
 export NACL_SEL_LDR
 export NACL_IRT
