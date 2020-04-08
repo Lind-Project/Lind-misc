@@ -68,7 +68,6 @@ The default environment of `./mklind -e` consists of
 export LIND_PREFIX="$HOME"
 export LIND_BASE="$LIND_PREFIX/lind_project"
 export LIND_SRC="$LIND_BASE/lind"
-export LIND_MONITOR="$LIND_BASE/reference_monitor"
 export REPY_PATH="$LIND_SRC/repy"
 export NACL_SDK_ROOT="$REPY_PATH/sdk"
 export PYTHON="python2"
